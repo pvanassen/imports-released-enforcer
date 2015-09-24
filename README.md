@@ -3,7 +3,7 @@
 The current maven enforcer plugin does not check if dependency management imports are released. This plugin will check.
 
 The following dependency declaration will pass the enforcer checks:
-```
+```xml
 <dependencyManagement>
   <dependencies>
     <dependency>
@@ -18,7 +18,7 @@ The following dependency declaration will pass the enforcer checks:
 ```
 
 When using this rule, no more.
-```
+```xml
 <configuration>
   <rules>
     <enforceImportRelease implementation="com.synedge.enforcer.EnforceImportRelease" />
