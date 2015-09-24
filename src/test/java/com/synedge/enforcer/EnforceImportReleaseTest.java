@@ -10,6 +10,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import java.io.File;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
@@ -57,6 +58,7 @@ public class EnforceImportReleaseTest {
         } catch (Exception ignored) {
         }
         MavenProject project = new MavenProject(model);
+        project.setFile(new File(getClass().getResource(pom).toURI()));
         EnforcerRuleHelper helper = mock(EnforcerRuleHelper.class);
         when(helper.evaluate(eq("${project}"))).thenReturn(project);
         Log log = mock(Log.class);
@@ -67,6 +69,13 @@ public class EnforceImportReleaseTest {
                 return null;
             }
         }).when(log).info(anyString());
+        doAnswer(new Answer<Void>() {
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                System.out.println(invocation.getArguments()[0]);
+                return null;
+            }
+        }).when(log).debug(anyString());
         when(helper.getLog()).thenReturn(log);
         return helper;
     }

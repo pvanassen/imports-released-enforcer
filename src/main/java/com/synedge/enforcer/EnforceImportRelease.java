@@ -23,8 +23,19 @@ import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.*;
+import java.io.IOException;
 
 /**
  * @author <a href="mailto:brianf@apache.org">Brian Fox</a>
@@ -34,6 +45,8 @@ public class EnforceImportRelease implements EnforcerRule {
 
     public void execute(EnforcerRuleHelper helper)
             throws EnforcerRuleException {
+        Log log = helper.getLog();
+        log.info("Entering enforcer");
         try {
             // get the various expressions out of the helper.
             MavenProject project = (MavenProject) helper.evaluate("${project}");
@@ -48,14 +61,35 @@ public class EnforceImportRelease implements EnforcerRule {
                 helper.getLog().info("No dependency management dependencies found. All ok");
                 return;
             }
-            for (Object obj : project.getDependencyManagement().getDependencies()) {
-                Dependency dependency = (Dependency) obj;
-                if ("import".equalsIgnoreCase(dependency.getScope()) && dependency.getVersion().contains("-SNAPSHOT")) {
+
+            helper.getLog().debug("Getting POM, parse and check it");
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            //Using factory get an instance of document builder
+            DocumentBuilder db = dbf.newDocumentBuilder();
+
+            //parse using builder to get DOM representation of the XML file
+            Document doc = db.parse(project.getFile().getAbsolutePath());
+            XPathFactory xPathfactory = XPathFactory.newInstance();
+            XPath xpath = xPathfactory.newXPath();
+            XPathExpression expr = xpath.compile("/*[local-name()='project']/*[local-name()='dependencyManagement']/*[local-name()='dependencies']/*[local-name()='dependency']/*[local-name()='scope' and text()='import']/../*[local-name()='version']");
+            NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
+            for(int i=0; i<nl.getLength() ; i++) {
+                Node version = nl.item(i);
+                if (version.getTextContent().contains("-SNAPSHOT")) {
                     throw new EnforcerRuleException("Found an artifact in the import scope containing SNAPSHOT!");
                 }
             }
+            helper.getLog().debug("Checked them all");
         } catch (ExpressionEvaluationException e) {
             throw new EnforcerRuleException("Unable to lookup an expression " + e.getLocalizedMessage(), e);
+        } catch (ParserConfigurationException e) {
+            throw new EnforcerRuleException("Unable to parse POM", e);
+        } catch (SAXException e) {
+            throw new EnforcerRuleException("Unable to parse POM", e);
+        } catch (IOException e) {
+            throw new EnforcerRuleException("Unable to parse POM", e);
+        } catch (XPathExpressionException e) {
+            throw new EnforcerRuleException("Internal error in XPath parser", e);
         }
     }
 
