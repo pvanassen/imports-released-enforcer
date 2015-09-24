@@ -37,6 +37,17 @@ public class EnforceImportRelease implements EnforcerRule {
         try {
             // get the various expressions out of the helper.
             MavenProject project = (MavenProject) helper.evaluate("${project}");
+            if (project == null) {
+                throw new EnforcerRuleException("There is no project");
+            }
+            if (project.getDependencyManagement() == null) {
+                helper.getLog().info("No dependency management found. All ok");
+                return;
+            }
+            if (project.getDependencyManagement().getDependencies() == null) {
+                helper.getLog().info("No dependency management dependencies found. All ok");
+                return;
+            }
             for (Object obj : project.getDependencyManagement().getDependencies()) {
                 Dependency dependency = (Dependency) obj;
                 if ("import".equalsIgnoreCase(dependency.getScope()) && dependency.getVersion().contains("-SNAPSHOT")) {
