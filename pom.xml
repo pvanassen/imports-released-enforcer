@@ -80,7 +80,7 @@
                         <id>attach-javadocs</id>
                         <phase>package</phase>
                         <goals>
-                            <goal>attach-docs</goal>
+                            <goal>jar</goal>
                         </goals>
                     </execution>
                 </executions>
