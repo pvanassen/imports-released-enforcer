@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/synedge/imports-released-enforcer.svg)](https://travis-ci.org/synedge/imports-released-enforcer)
 # Imports released enforcer
 
 The current maven enforcer plugin does not check if dependency management imports are released. This plugin will check.
