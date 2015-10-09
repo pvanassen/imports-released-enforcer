@@ -22,7 +22,6 @@ package com.synedge.enforcer;
 import org.apache.maven.enforcer.rule.api.EnforcerRule;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleException;
 import org.apache.maven.enforcer.rule.api.EnforcerRuleHelper;
-import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.component.configurator.expression.ExpressionEvaluationException;
@@ -43,6 +42,15 @@ import java.io.IOException;
  */
 public class EnforceImportRelease implements EnforcerRule {
 
+    /**
+     * Allows this rule to execute only when this project is a release.
+     *
+     * @parameter
+     * @see {@link #setOnlyWhenRelease(boolean)}
+     * @see {@link #isOnlyWhenRelease()}
+     */
+    private boolean onlyWhenRelease = false;
+
     public void execute(EnforcerRuleHelper helper)
             throws EnforcerRuleException {
         Log log = helper.getLog();
@@ -53,12 +61,15 @@ public class EnforceImportRelease implements EnforcerRule {
             if (project == null) {
                 throw new EnforcerRuleException("There is no project");
             }
+            if (onlyWhenRelease && project.getArtifact().isSnapshot()) {
+                log.warn("Project is SNAPSHOT, not validating");
+            }
             if (project.getDependencyManagement() == null) {
-                helper.getLog().info("No dependency management found. All ok");
+                log.info("No dependency management found. All ok");
                 return;
             }
             if (project.getDependencyManagement().getDependencies() == null) {
-                helper.getLog().info("No dependency management dependencies found. All ok");
+                log.info("No dependency management dependencies found. All ok");
                 return;
             }
 
@@ -73,7 +84,7 @@ public class EnforceImportRelease implements EnforcerRule {
             XPath xpath = xPathfactory.newXPath();
             XPathExpression expr = xpath.compile("/*[local-name()='project']/*[local-name()='dependencyManagement']/*[local-name()='dependencies']/*[local-name()='dependency']/*[local-name()='scope' and text()='import']/../*[local-name()='version']");
             NodeList nl = (NodeList) expr.evaluate(doc, XPathConstants.NODESET);
-            for(int i=0; i<nl.getLength() ; i++) {
+            for (int i = 0; i < nl.getLength(); i++) {
                 Node version = nl.item(i);
                 if (version.getTextContent().contains("-SNAPSHOT")) {
                     throw new EnforcerRuleException("Found an artifact in the import scope containing SNAPSHOT!");
@@ -126,4 +137,13 @@ public class EnforceImportRelease implements EnforcerRule {
     public boolean isResultValid(EnforcerRule arg0) {
         return false;
     }
+
+    public final boolean isOnlyWhenRelease() {
+        return onlyWhenRelease;
+    }
+
+    public final void setOnlyWhenRelease(boolean onlyWhenRelease) {
+        this.onlyWhenRelease = onlyWhenRelease;
+    }
+
 }
