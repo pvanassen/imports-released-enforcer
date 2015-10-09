@@ -63,6 +63,7 @@ public class EnforceImportRelease implements EnforcerRule {
             }
             if (onlyWhenRelease && project.getArtifact().isSnapshot()) {
                 log.warn("Project is SNAPSHOT, not validating");
+                return;
             }
             if (project.getDependencyManagement() == null) {
                 log.info("No dependency management found. All ok");
